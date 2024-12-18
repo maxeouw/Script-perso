@@ -52,6 +52,7 @@ def generate_summary_report(dataframe: pd.DataFrame, output_file: str = DEFAULT_
             'quantity': 'Total Quantity',
             'price': 'Average Price'
         })
+        summary['Average Price'] = summary['Average Price'].round(2)
         summary.to_csv(output_file)
         print(f"Summary report saved to {output_file}")
     except KeyError as e:

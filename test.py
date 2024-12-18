@@ -1,7 +1,9 @@
 import os
 import pandas as pd
 import unittest
-from main import consolidate_csv_files, search_data, generate_summary_report
+from main import consolidate_csv_files, search_data, generate_summary_report, main
+from unittest.mock import patch
+import io
 
 class TestStockManagement(unittest.TestCase):
 
@@ -22,6 +24,13 @@ class TestStockManagement(unittest.TestCase):
         self.assertEqual(df['category'].nunique(), 4)  # Ensure four unique categories
         self.assertFalse(df.isnull().values.any())  # Ensure no missing values
 
+    def test_consolidate_csv_files_no_csv_files(self):
+        empty_dir = os.path.join(self.test_dir, "empty")
+        os.makedirs(empty_dir, exist_ok=True)
+        with self.assertRaises(ValueError):
+            consolidate_csv_files(empty_dir)
+        os.rmdir(empty_dir)
+
     def test_search_data(self):
         """Test searching for data within a DataFrame."""
         df = consolidate_csv_files(self.test_dir)
@@ -40,6 +49,11 @@ class TestStockManagement(unittest.TestCase):
 
         results = search_data(df, 'name', 'Nonexistent')
         self.assertEqual(len(results), 0)  # No rows for non-existent item
+
+    def test_search_data_column_not_found(self):
+        df = pd.DataFrame({"name": ["item1", "item2"], "quantity": [10, 20]})
+        with self.assertRaises(KeyError):
+            search_data(df, "nonexistent_column", "item")
 
     def test_generate_summary_report(self):
         """Test generation of a summary report."""
@@ -71,6 +85,26 @@ class TestStockManagement(unittest.TestCase):
         # Cleanup: Remove the summary report file
         if os.path.exists(output_file):
             os.remove(output_file)
+
+    def test_main_menu_display(self):
+        with patch("builtins.input", side_effect=["4"]), patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("Welcome to the Stock Management Tool", output)
+            self.assertIn("1. Consolidate CSV Files", output)
+            self.assertIn("4. Exit", output)
+
+    def test_main_invalid_choice(self):
+        with patch("builtins.input", side_effect=["invalid", "4"]), patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("Invalid choice. Please try again.", output)
+
+    def test_main_exit(self):
+        with patch("builtins.input", side_effect=["4"]), patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("Exiting the program. Goodbye!", output)
 
 if __name__ == "__main__":
     unittest.main()
