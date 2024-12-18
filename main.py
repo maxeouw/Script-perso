@@ -1,14 +1,20 @@
 import os
 import pandas as pd
 
+DEFAULT_REPORT_FILENAME = "report.csv"
 
-def consolidate_csv_files(directory):
+def consolidate_csv_files(directory: str) -> pd.DataFrame:
     """
     Consolidate all CSV files in the specified directory into a single DataFrame.
+
+    Raises:
+        ValueError: If no CSV files are found in the directory.
     """
     csv_files = [file for file in os.listdir(directory) if file.endswith('.csv')]
-    dataframes = []
+    if not csv_files:
+        raise ValueError("No CSV files found in the directory.")
 
+    dataframes = []
     for file in csv_files:
         file_path = os.path.join(directory, file)
         try:
@@ -17,25 +23,26 @@ def consolidate_csv_files(directory):
         except Exception as e:
             print(f"Error reading {file}: {e}")
 
-    if dataframes:
-        return pd.concat(dataframes, ignore_index=True)
-    else:
-        raise ValueError("No CSV files found in the directory.")
+    return pd.concat(dataframes, ignore_index=True)
 
-
-def search_data(dataframe, column, search_value):
+def search_data(dataframe: pd.DataFrame, column: str, search_value: str) -> pd.DataFrame:
     """
     Search for rows in the DataFrame where the specified column contains the search value.
+
+    Raises:
+        KeyError: If the column does not exist in the DataFrame.
     """
     if column not in dataframe.columns:
         raise KeyError(f"Column '{column}' not found in the DataFrame.")
 
-    return dataframe[dataframe[column].astype(str).str.contains(search_value, case=False, na=False)]
+    return dataframe[dataframe[column].astype(str) == search_value]
 
-
-def generate_summary_report(dataframe, output_file):
+def generate_summary_report(dataframe: pd.DataFrame, output_file: str = DEFAULT_REPORT_FILENAME) -> None:
     """
     Generate a summary report grouped by category, showing total quantity and average price.
+
+    Raises:
+        KeyError: If required columns are missing in the DataFrame.
     """
     try:
         summary = dataframe.groupby('category').agg({
@@ -52,8 +59,7 @@ def generate_summary_report(dataframe, output_file):
     except Exception as e:
         print(f"Error generating summary report: {e}")
 
-
-def main():
+def main() -> None:
     """
     Main function to provide a command-line interface for the stock management tool.
     """
@@ -66,10 +72,13 @@ def main():
     data = None
 
     while True:
-        choice = input("Enter your choice: ")
+        choice = input("Enter your choice: ").strip()
 
         if choice == '1':
-            directory = input("Enter the directory containing CSV files: ")
+            directory = input("Enter the directory containing CSV files: ").strip()
+            if not os.path.isdir(directory):
+                print("Invalid directory. Please try again.")
+                continue
             try:
                 data = consolidate_csv_files(directory)
                 print("CSV files consolidated successfully.")
@@ -81,12 +90,15 @@ def main():
                 print("No data available. Please consolidate CSV files first.")
                 continue
 
-            column = input("Enter the column to search: ")
-            search_value = input("Enter the search value: ")
+            column = input("Enter the column to search: ").strip()
+            search_value = input("Enter the search value: ").strip()
             try:
                 results = search_data(data, column, search_value)
-                print("Search Results:")
-                print(results)
+                if results.empty:
+                    print("No matching records found.")
+                else:
+                    print("Search Results:")
+                    print(results)
             except Exception as e:
                 print(f"Error: {e}")
 
@@ -95,7 +107,8 @@ def main():
                 print("No data available. Please consolidate CSV files first.")
                 continue
 
-            output_file = input("Enter the output file name for the summary report: ")
+            output_file = input("Enter the output file name for the summary report (or press Enter for default): ").strip()
+            output_file = output_file if output_file else DEFAULT_REPORT_FILENAME
             generate_summary_report(data, output_file)
 
         elif choice == '4':
@@ -104,7 +117,6 @@ def main():
 
         else:
             print("Invalid choice. Please try again.")
-
 
 if __name__ == "__main__":
     main()
