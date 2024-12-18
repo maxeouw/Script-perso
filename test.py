@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import unittest
-from main import consolidate_csv_files, search_data, generate_summary_report, main
+from main import consolidate_csv_files, search_data, generate_summary_report, main, DEFAULT_REPORT_FILENAME
 from unittest.mock import patch
 import io
 
@@ -11,8 +11,6 @@ class TestStockManagement(unittest.TestCase):
     def setUpClass(cls):
         """Set the directory containing the CSV files for testing."""
         cls.test_dir = os.path.join(os.path.dirname(__file__), "CSV")
-        if not os.path.exists(cls.test_dir):
-            raise FileNotFoundError(f"Test directory '{cls.test_dir}' does not exist.")
 
     def test_consolidate_csv_files(self):
         """Test consolidation of multiple CSV files."""
@@ -104,6 +102,87 @@ class TestStockManagement(unittest.TestCase):
         with patch("builtins.input", side_effect=["4"]), patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
             main()
             output = mock_stdout.getvalue()
+            self.assertIn("Exiting the program. Goodbye!", output)
+
+    def test_main_consolidate_valid_directory(self):
+        with patch("builtins.input", side_effect=["1", self.test_dir, "4"]), patch("sys.stdout",
+                                                                                   new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("CSV files consolidated successfully.", output)
+
+    def test_main_consolidate_invalid_directory(self):
+        with patch("builtins.input", side_effect=["1", "invalid_directory", "4"]), patch("sys.stdout",
+                                                                                         new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("Invalid directory. Please try again.", output)
+
+    def test_main_search_success(self):
+        with patch("builtins.input", side_effect=["1", self.test_dir, "2", "category", "Electronics", "4"]), patch(
+                "sys.stdout", new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("Search Results:", output)
+
+    def test_main_search_no_results(self):
+        with patch("builtins.input", side_effect=["1", self.test_dir, "2", "name", "Nonexistent", "4"]), patch(
+                "sys.stdout", new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("No matching records found.", output)
+
+    def test_main_search_invalid_column(self):
+        with patch("builtins.input", side_effect=["1", self.test_dir, "2", "invalid_column", "value", "4"]), patch(
+                "sys.stdout", new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("Error:", output)
+
+    def test_main_generate_report_custom_file(self):
+        with patch("builtins.input", side_effect=["1", self.test_dir, "3", "custom_report.csv", "4"]), patch(
+                "sys.stdout", new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("Summary report saved to custom_report.csv", output)
+            os.remove("custom_report.csv")  # Cleanup
+
+    def test_main_generate_report_default_file(self):
+        with patch("builtins.input", side_effect=["1", self.test_dir, "3", "", "4"]), patch("sys.stdout",
+                                                                                            new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn(f"Summary report saved to {DEFAULT_REPORT_FILENAME}", output)
+            os.remove(DEFAULT_REPORT_FILENAME)  # Cleanup
+
+    def test_main_generate_report_no_data(self):
+        with patch("builtins.input", side_effect=["3", "4"]), patch("sys.stdout",
+                                                                    new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("No data available. Please consolidate CSV files first.", output)
+
+    def test_main_no_data_for_search(self):
+        with patch("builtins.input", side_effect=["2", "4"]), patch("sys.stdout",
+                                                                    new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("No data available. Please consolidate CSV files first.", output)
+
+    def test_main_no_data_for_report(self):
+        with patch("builtins.input", side_effect=["3", "4"]), patch("sys.stdout",
+                                                                    new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("No data available. Please consolidate CSV files first.", output)
+
+    def test_main_program_execution(self):
+        with patch("builtins.input", side_effect=["1", self.test_dir, "4"]), patch("sys.stdout",
+                                                                                   new_callable=io.StringIO) as mock_stdout:
+            main()
+            output = mock_stdout.getvalue()
+            self.assertIn("Welcome to the Stock Management Tool", output)
+            self.assertIn("CSV files consolidated successfully.", output)
             self.assertIn("Exiting the program. Goodbye!", output)
 
 if __name__ == "__main__":
