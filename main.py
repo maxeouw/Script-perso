@@ -1,3 +1,4 @@
+import argparse
 import os
 import pandas as pd
 
@@ -60,9 +61,9 @@ def generate_summary_report(dataframe: pd.DataFrame, output_file: str = DEFAULT_
     except Exception as e:
         print(f"Error generating summary report: {e}")
 
-def main() -> None:
+def interactive_menu() -> None:
     """
-    Main function to provide a command-line interface for the stock management tool.
+    Interactive menu for the Stock Management Tool.
     """
     print("Welcome to the Stock Management Tool")
     print("1. Consolidate CSV Files")
@@ -118,6 +119,17 @@ def main() -> None:
 
         else:
             print("Invalid choice. Please try again.")
+
+def main():
+    parser = argparse.ArgumentParser(description="Stock Management Tool")
+    subparsers = parser.add_subparsers(dest='command', required=True)
+
+    subparsers.add_parser('interactive', help="Launch interactive menu")
+
+    args = parser.parse_args()
+
+    if args.command == 'interactive':
+        interactive_menu()
 
 if __name__ == "__main__":
     main()
