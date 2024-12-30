@@ -11,20 +11,17 @@ def consolidate_csv_files(directory: str) -> pd.DataFrame:
     Raises:
         ValueError: If no CSV files are found in the directory.
     """
-    csv_files = [file for file in os.listdir(directory) if file.endswith('.csv')]
-    if not csv_files:
-        raise ValueError("No CSV files found in the directory.")
-
-    dataframes = []
-    for file in csv_files:
-        file_path = os.path.join(directory, file)
-        try:
-            df = pd.read_csv(file_path)
-            dataframes.append(df)
-        except Exception as e:
-            print(f"Error reading {file}: {e}")
-
-    return pd.concat(dataframes, ignore_index=True)
+    all_data = []
+    for file in os.listdir(directory):
+        if file.endswith(".csv"):
+            try:
+                df = pd.read_csv(os.path.join(directory, file))
+                all_data.append(df)
+            except Exception as e:
+                print(f"Error reading {file}: {e}")  # Explicitly print the error message
+    if not all_data:
+        raise ValueError("No valid CSV files found.")
+    return pd.concat(all_data, ignore_index=True)
 
 def search_data(dataframe: pd.DataFrame, column: str, search_value: str) -> pd.DataFrame:
     """
@@ -120,16 +117,56 @@ def interactive_menu() -> None:
         else:
             print("Invalid choice. Please try again.")
 
-def main():
+def main(args=None):
     parser = argparse.ArgumentParser(description="Stock Management Tool")
     subparsers = parser.add_subparsers(dest='command', required=True)
 
+    # Interactive mode
     subparsers.add_parser('interactive', help="Launch interactive menu")
 
-    args = parser.parse_args()
+    # Consolidate command
+    consolidate_parser = subparsers.add_parser('consolidate', help="Consolidate CSV files")
+    consolidate_parser.add_argument('--directory', required=True, help="Directory containing CSV files")
 
-    if args.command == 'interactive':
+    # Search command
+    search_parser = subparsers.add_parser('search', help="Search data in consolidated CSV")
+    search_parser.add_argument('--directory', required=True, help="Directory containing CSV files")
+    search_parser.add_argument('--column', required=True, help="Column to search")
+    search_parser.add_argument('--value', required=True, help="Value to search for in the column")
+
+    # Summary command
+    summary_parser = subparsers.add_parser('summary', help="Generate summary report")
+    summary_parser.add_argument('--directory', required=True, help="Directory containing CSV files")
+    summary_parser.add_argument('--output', default=DEFAULT_REPORT_FILENAME, help="Output file for summary report")
+
+    parsed_args = parser.parse_args(args)
+
+    if parsed_args.command == 'interactive':
         interactive_menu()
+    elif parsed_args.command == 'consolidate':
+        try:
+            df = consolidate_csv_files(parsed_args.directory)
+            print("CSV files consolidated successfully.")
+        except Exception as e:
+            print(f"Error: {e}")
+    elif parsed_args.command == 'search':
+        try:
+            df = consolidate_csv_files(parsed_args.directory)
+            results = search_data(df, parsed_args.column, parsed_args.value)
+            if results.empty:
+                print("No matching records found.")
+            else:
+                print("Search Results:")
+                print(results)
+        except Exception as e:
+            print(f"Error: {e}")
+    elif parsed_args.command == 'summary':
+        try:
+            df = consolidate_csv_files(parsed_args.directory)
+            generate_summary_report(df, parsed_args.output)
+        except Exception as e:
+            print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     main()
