@@ -41,6 +41,7 @@ def generate_summary_report(dataframe: pd.DataFrame, output_file: str = DEFAULT_
 
     Raises:
         KeyError: If required columns are missing in the DataFrame.
+        Exception: If an error occurs during report generation.
     """
     try:
         summary = dataframe.groupby('category').agg({
@@ -61,6 +62,9 @@ def generate_summary_report(dataframe: pd.DataFrame, output_file: str = DEFAULT_
 def interactive_menu() -> None:
     """
     Interactive menu for the Stock Management Tool.
+
+    Raises:
+        Exception: If an error occurs during any operation in the interactive menu.
     """
     print("Welcome to the Stock Management Tool")
     print("1. Consolidate CSV Files")
@@ -118,6 +122,12 @@ def interactive_menu() -> None:
             print("Invalid choice. Please try again.")
 
 def main(args=None):
+    """
+        Main function to handle command-line arguments and execute the corresponding functionality.
+
+        Raises:
+            Exception: If an error occurs in any command execution.
+        """
     parser = argparse.ArgumentParser(description="Stock Management Tool")
     subparsers = parser.add_subparsers(dest='command', required=True)
 
